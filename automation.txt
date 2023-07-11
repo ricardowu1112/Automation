@@ -1,0 +1,72 @@
+import os
+from pathlib import Path
+import docx
+from docx.shared import Inches, Cm
+import glob
+
+parent_dir = "/Users/ricardowu/Documents/Ricardo wu/screenshot"
+folder_name = "sk10002"
+dir_to_save = 'doc file'
+
+class testing_tool:
+
+    def __init__(self, parent_dir, dir_to_save):
+        self.parent_dir = parent_dir
+        self.dir_to_save = dir_to_save
+
+    def create_folder(self, folder_name):
+        '''
+        The function creates a folder with name as folder name, nothing returned
+        '''
+        # Path
+        path = os.path.join(self.parent_dir, folder_name)
+        os.mkdir(path)
+        print("Directory '% s' created" % folder_name)
+
+    def extract_dir_image(self, folder_name):
+        '''
+        This function pass in the dir and folder to check the image files with format .png and return a list of strings with filenames
+        e.g. ['screenshot/sk10001/Screenshot 2023-07-07 at 10.19.36 AM.png','screenshot/sk10001/Screenshot 2023-07-07 at 10.19.53 AM.png']
+        '''
+        sorted_dir_list = sorted(Path(self.parent_dir + '/' + folder_name).iterdir(), key=os.path.getmtime)
+        sorted_image_name_list = [str(file_name) for file_name in sorted_dir_list if '.png' in str(file_name)]
+        return sorted_image_name_list
+
+    def integrate_into_docx(self, folder_name, sorted_image_name_list):
+        '''
+        Assume folders containing images named with the testing case number, so create the docx files with filename from the source folders
+        '''
+        # Create an instance of a word document
+        doc = docx.Document()
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Cm(0.5)
+            section.bottom_margin = Cm(0.5)
+            section.left_margin = Cm(1)
+            section.right_margin = Cm(1)
+        # Add a Title to the document
+        sentence1 = doc.add_heading(folder_name, 0)
+        sentence1.alignment = 1
+
+        for file_listed in sorted_image_name_list:
+            docx.enum.text.WD_BREAK.LINE
+            pic = doc.add_picture(file_listed, width=Inches(6))
+            pic.alignment = 1
+    
+        # Now save the document to a location
+        doc.save(self.parent_dir + '/' + self.dir_to_save + '/' + folder_name + ".docx")
+        print(folder_name + ".docx" + ' created in folder: ' + self.dir_to_save)
+
+    def get_subdir_list(self):
+        '''
+        get subdir under parent dir, add dir_list into self
+        '''
+        dir = os.path.join(self.parent_dir)
+        self.dir_list = [subdir for subdir in glob.glob(f'{rootdir}/*/') if self.dir_to_save not in subdir]
+
+    def run(self):
+        self.get_subdir_list()
+        for sub_dir in self.dir_list:
+            folder_name = sub_dir.split('/')[-2]
+            sorted_image_name_list = self.extract_dir_image(folder_name)
+            self.integrate_into_docx(folder_name, sorted_image_name_list)
